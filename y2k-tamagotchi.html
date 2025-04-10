@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Y2K Tamagotchi Room</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Courier New', monospace;
+      background: #222;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #room {
+      position: relative;
+      width: 800px;
+      height: 600px;
+      background: url('https://i.imgur.com/W3zxeDg.png') center/cover no-repeat;
+      border: 5px solid #ff00ff;
+      margin-top: 20px;
+      overflow: hidden;
+    }
+
+    #pet {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      background: url('https://i.imgur.com/0xQ7mKZ.png') center/cover no-repeat;
+      left: 100px;
+      top: 100px;
+      transition: top 0.1s, left 0.1s;
+    }
+
+    .accessory {
+      position: absolute;
+      width: 64px;
+      height: 64px;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+    }
+
+    #inventory {
+      margin-top: 20px;
+    }
+
+    .item {
+      display: inline-block;
+      margin: 0 10px;
+      border: 2px solid white;
+      padding: 5px;
+      cursor: pointer;
+    }
+
+    .item img {
+      width: 32px;
+      height: 32px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🐾 Y2K Virtual Pet Room</h1>
+  <div id="room">
+    <div id="pet">
+      <img class="accessory" id="hat" src="https://i.imgur.com/1X5Xck3.png" style="display: none;" />
+    </div>
+  </div>
+
+  <div id="inventory">
+    <strong>Inventory:</strong>
+    <div class="item" onclick="toggleAccessory('hat')">
+      <img src="https://i.imgur.com/1X5Xck3.png" alt="Hat" />
+    </div>
+  </div>
+
+  <script>
+    const pet = document.getElementById('pet');
+    const step = 10;
+    let pos = { x: 100, y: 100 };
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowUp':
+          pos.y = Math.max(0, pos.y - step);
+          break;
+        case 'ArrowDown':
+          pos.y = Math.min(536, pos.y + step);
+          break;
+        case 'ArrowLeft':
+          pos.x = Math.max(0, pos.x - step);
+          break;
+        case 'ArrowRight':
+          pos.x = Math.min(736, pos.x + step);
+          break;
+      }
+      pet.style.top = pos.y + 'px';
+      pet.style.left = pos.x + 'px';
+    });
+
+    function toggleAccessory(id) {
+      const el = document.getElementById(id);
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>
