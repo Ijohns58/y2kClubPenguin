@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Y2K Tamagotchi Room</title>
+  <title>Y2K Virtual Pet Room</title>
   <style>
     body {
       margin: 0;
@@ -19,7 +19,7 @@
       position: relative;
       width: 800px;
       height: 600px;
-      background: url('https://raw.githubusercontent.com/eggheadio-projects/club-penguin-style-room/main/assets/lounge.png') center/cover no-repeat;
+      background: url('assets/background.jpg') center/cover no-repeat;
       border: 5px solid #ff00ff;
       margin-top: 20px;
       overflow: hidden;
@@ -29,9 +29,9 @@
       position: absolute;
       width: 64px;
       height: 64px;
-      background: url('https://i.imgur.com/0xQ7mKZ.png') center/cover no-repeat;
-      left: 100px;
-      top: 100px;
+      background: url('assets/pet.png') center/cover no-repeat;
+      left: calc(50% - 32px);
+      top: calc(50% - 32px);
       transition: top 0.1s, left 0.1s;
     }
 
@@ -44,67 +44,265 @@
       pointer-events: none;
     }
 
-    #inventory {
+    #status-bars {
+      margin-top: 20px;
+      display: flex;
+      gap: 20px;
+    }
+
+    .bar {
+      width: 200px;
+      height: 20px;
+      background: #555;
+      border: 2px solid white;
+    }
+
+    .fill {
+      height: 100%;
+      background: limegreen;
+      transition: width 0.5s;
+    }
+
+    #inventory, #actions, #upgrades, #currency {
       margin-top: 20px;
     }
 
-    .item {
+    .item, .action-btn, .upgrade-slot, button {
       display: inline-block;
       margin: 0 10px;
       border: 2px solid white;
-      padding: 5px;
+      padding: 5px 10px;
       cursor: pointer;
+      background: #333;
+      color: white;
+      transition: background 0.2s;
+      font-family: inherit;
     }
 
-    .item img {
-      width: 32px;
-      height: 32px;
+    .item:hover, .action-btn:hover, .upgrade-slot:hover, button:hover {
+      background: #444;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0) scale(1, 1);
+      }
+      50% {
+        transform: translateY(-4px) scale(1.05, 0.95);
+      }
+    }
+
+    #pet.moving {
+      animation: bounce 0.2s ease;
+    }
+
+    #shop {
+      display: none;
+      width: 800px;
+      height: 600px;
+      background: url('assets/shop-bg.png') center/cover no-repeat;
+      border: 5px solid #00ffff;
+      margin-top: 20px;
+      position: relative;
+      color: white;
+      padding: 20px;
+      box-sizing: border-box;
+      text-align: center;
+    }
+
+    #shop .item {
+      background: rgba(0,0,0,0.5);
     }
   </style>
 </head>
 <body>
-  <h1>📚 Club Penguin-Style Lounge</h1>
+  <h1>🐾 Y2K Virtual Pet Room</h1>
+
+  <div id="currency">
+    <strong>Coins:</strong> <span id="coinCount">0</span>
+    <button onclick="earnCoins()">🎮 Play Minigame</button>
+    <button onclick="enterShop()">🛍️ Go to Shop</button>
+  </div>
+
   <div id="room">
     <div id="pet">
-      <img class="accessory" id="hat" src="https://i.imgur.com/1X5Xck3.png" style="display: none;" />
+      <img class="accessory" id="hat" src="assets/hat.png" style="display: none;" />
     </div>
+
+    <!-- Room items -->
+    <img id="bed" src="assets/red-bed.png"
+         style="display: none; position: absolute; bottom: 40px; left: 60px; width: 120px;" />
+
+    <img id="toy" src="assets/coin-chest.png"
+         style="display: none; position: absolute; bottom: 35px; left: 220px; width: 90px;" />
+
+    <img id="poster" src="assets/superhero-poster.png"
+         style="display: none; position: absolute; top: 70px; right: 80px; width: 100px;" />
+  </div>
+
+  <div id="status-bars">
+    <div class="bar"><div class="fill" id="hungerBar"></div></div>
+    <div class="bar"><div class="fill" id="happinessBar"></div></div>
+    <div class="bar"><div class="fill" id="healthBar"></div></div>
   </div>
 
   <div id="inventory">
     <strong>Inventory:</strong>
     <div class="item" onclick="toggleAccessory('hat')">
-      <img src="https://i.imgur.com/1X5Xck3.png" alt="Hat" />
+      <img src="assets/hat.png" alt="Hat" width="32" />
     </div>
+  </div>
+
+  <div id="actions">
+    <strong>Actions:</strong>
+    <div class="action-btn" onclick="feed()">🍗 Feed</div>
+    <div class="action-btn" onclick="play()">🎮 Play</div>
+    <div class="action-btn" onclick="heal()">💊 Heal</div>
+  </div>
+
+  <!-- SHOP AREA -->
+  <div id="shop">
+    <h2>🛍️ Y2K Shop</h2>
+    <p>You have <strong><span id="shopCoins">0</span></strong> coins.</p>
+
+    <div class="item" onclick="purchase('Bed', 20)">🛏️ Buy Bed - 20 Coins</div>
+    <div class="item" onclick="purchase('Toy Chest', 15)">🧸 Buy Toy Chest - 15 Coins</div>
+    <div class="item" onclick="purchase('Poster', 10)">🖼️ Buy Poster - 10 Coins</div>
+
+    <br /><br />
+    <button onclick="returnToRoom()">🏠 Return to Pet Room</button>
   </div>
 
   <script>
     const pet = document.getElementById('pet');
     const step = 10;
-    let pos = { x: 100, y: 100 };
+    let pos = { x: 368, y: 268 };
+    pet.style.left = pos.x + 'px';
+    pet.style.top = pos.y + 'px';
 
     document.addEventListener('keydown', (e) => {
+      let moved = false;
       switch (e.key) {
-        case 'ArrowUp':
-          pos.y = Math.max(0, pos.y - step);
-          break;
-        case 'ArrowDown':
-          pos.y = Math.min(536, pos.y + step);
-          break;
-        case 'ArrowLeft':
-          pos.x = Math.max(0, pos.x - step);
-          break;
-        case 'ArrowRight':
-          pos.x = Math.min(736, pos.x + step);
-          break;
+        case 'ArrowUp': pos.y = Math.max(0, pos.y - step); moved = true; break;
+        case 'ArrowDown': pos.y = Math.min(536, pos.y + step); moved = true; break;
+        case 'ArrowLeft': pos.x = Math.max(0, pos.x - step); moved = true; break;
+        case 'ArrowRight': pos.x = Math.min(736, pos.x + step); moved = true; break;
       }
-      pet.style.top = pos.y + 'px';
-      pet.style.left = pos.x + 'px';
+      if (moved) {
+        pet.style.top = pos.y + 'px';
+        pet.style.left = pos.x + 'px';
+        pet.classList.remove('moving');
+        void pet.offsetWidth;
+        pet.classList.add('moving');
+      }
     });
 
     function toggleAccessory(id) {
       const el = document.getElementById(id);
       el.style.display = el.style.display === 'none' ? 'block' : 'none';
     }
+
+    let hunger = 100;
+    let happiness = 100;
+    let health = 100;
+    const hungerBar = document.getElementById("hungerBar");
+    const happinessBar = document.getElementById("happinessBar");
+    const healthBar = document.getElementById("healthBar");
+
+    function updateBars() {
+      hungerBar.style.width = hunger + "%";
+      happinessBar.style.width = happiness + "%";
+      healthBar.style.width = health + "%";
+      hungerBar.style.background = hunger > 50 ? "limegreen" : hunger > 25 ? "orange" : "red";
+      happinessBar.style.background = happiness > 50 ? "limegreen" : happiness > 25 ? "orange" : "red";
+      healthBar.style.background = health > 50 ? "limegreen" : health > 25 ? "orange" : "red";
+    }
+
+    setInterval(() => {
+      hunger = Math.max(0, hunger - 1);
+      happiness = Math.max(0, happiness - 0.5);
+      health = Math.max(0, health - 0.3);
+      updateBars();
+    }, 1000);
+
+    function feed() { hunger = Math.min(100, hunger + 15); updateBars(); }
+    function play() { happiness = Math.min(100, happiness + 10); updateBars(); }
+    function heal() { health = Math.min(100, health + 8); updateBars(); }
+
+    // 🪙 Currency + LocalStorage
+    let coins = 0;
+    let unlocked = {
+      "Bed": false,
+      "Toy Chest": false,
+      "Poster": false
+    };
+    const coinCountEl = document.getElementById('coinCount');
+
+    function earnCoins() {
+      const earned = Math.floor(Math.random() * 10) + 5;
+      coins += earned;
+      coinCountEl.textContent = coins;
+      document.getElementById("shopCoins").textContent = coins;
+      saveGame();
+    }
+
+    function purchase(item, cost) {
+      if (coins >= cost) {
+        coins -= cost;
+        unlocked[item] = true;
+        coinCountEl.textContent = coins;
+        document.getElementById("shopCoins").textContent = coins;
+        alert(`✅ You bought a ${item}!`);
+        showUnlockedItems();
+        saveGame();
+      } else {
+        alert("❌ Not enough coins!");
+      }
+    }
+
+    function showUnlockedItems() {
+      if (unlocked["Bed"]) document.getElementById("bed").style.display = "block";
+      if (unlocked["Toy Chest"]) document.getElementById("toy").style.display = "block";
+      if (unlocked["Poster"]) document.getElementById("poster").style.display = "block";
+    }
+
+    function enterShop() {
+      document.getElementById("room").style.display = "none";
+      document.getElementById("inventory").style.display = "none";
+      document.getElementById("actions").style.display = "none";
+      document.getElementById("status-bars").style.display = "none";
+      document.getElementById("currency").style.display = "none";
+      document.getElementById("shop").style.display = "block";
+      document.getElementById("shopCoins").textContent = coins;
+    }
+
+    function returnToRoom() {
+      document.getElementById("room").style.display = "block";
+      document.getElementById("inventory").style.display = "block";
+      document.getElementById("actions").style.display = "block";
+      document.getElementById("status-bars").style.display = "flex";
+      document.getElementById("currency").style.display = "block";
+      document.getElementById("shop").style.display = "none";
+    }
+
+    function saveGame() {
+      const data = { coins, unlocked };
+      localStorage.setItem("y2kGameSave", JSON.stringify(data));
+    }
+
+    function loadGame() {
+      const saved = localStorage.getItem("y2kGameSave");
+      if (saved) {
+        const data = JSON.parse(saved);
+        coins = data.coins ?? 0;
+        unlocked = data.unlocked ?? unlocked;
+        coinCountEl.textContent = coins;
+        showUnlockedItems();
+      }
+    }
+
+    loadGame();
+    updateBars();
   </script>
 </body>
 </html>
